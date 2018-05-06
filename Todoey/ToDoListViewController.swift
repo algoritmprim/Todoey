@@ -12,7 +12,7 @@ class ToDoListViewController: UITableViewController{
     
     // 1. Creem Un itemArray
     
-    let itemArray = ["Find Mike","Buy Eggos","Destroy Demogorgon"]
+    var itemArray = ["Find Mike","Buy Eggos","Destroy Demogorgon"]
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -56,6 +56,40 @@ class ToDoListViewController: UITableViewController{
         // 5 functie ce raspunde de deselctare celulelor
         tableView.deselectRow(at: indexPath, animated: true)
     }
-
+    
+    //MARk: - Add new items
+    // 7. Creem butonul de audaugare- addButtonpresed
+    @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
+        
+        // 10. Creem o variabila locala
+        
+        var textField = UITextField()
+        
+        //8. creem o alerta
+        
+        let alert = UIAlertController(title: "Add new Todoey item", message: "", preferredStyle: .alert)
+        let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
+            // ce se va intimpla du pa ce utilizatorul va apasa butonul add item dun alerta
+            
+            self.itemArray.append(textField.text!)
+            
+        // 11. metoda c/r de reincarcarea datelor in tableView
+      
+            self.tableView.reloadData()
+        
+        }
+        // 9. creem un cimp de text pentru alerta creata mai sus, si luam variabila creata la punctul 10 pentru ai da valoarea textului din alertTextFielf
+        
+        alert.addTextField { (alertTextField) in
+            alertTextField.placeholder = "Create new item"
+            textField = alertTextField
+        }
+        
+        
+        alert.addAction(action)
+        present(alert, animated: true, completion: nil)
+        
+    }
+    
 }
 
