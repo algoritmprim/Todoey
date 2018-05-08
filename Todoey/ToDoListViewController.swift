@@ -13,9 +13,19 @@ class ToDoListViewController: UITableViewController{
     // 1. Creem Un itemArray
     
     var itemArray = ["Find Mike","Buy Eggos","Destroy Demogorgon"]
+    
+    // 10. Cream un obiect nou
+    
+    let defaults = UserDefaults.standard
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+     // 13 gasim si intoarcem datele inapoi dun pLIstul ToDoListArray
+        
+        if let items = defaults.array(forKey: "ToDoListArray") as? [String] {
+            itemArray = items
+        }
        
     }
     
@@ -72,6 +82,10 @@ class ToDoListViewController: UITableViewController{
             // ce se va intimpla du pa ce utilizatorul va apasa butonul add item dun alerta
             
             self.itemArray.append(textField.text!)
+            
+        // 12. salvam itemArray in user defaults
+            
+            self.defaults.set(self.itemArray, forKey: "ToDoListArray")
             
         // 11. metoda c/r de reincarcarea datelor in tableView
       
