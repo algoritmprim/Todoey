@@ -12,21 +12,22 @@ class ToDoListViewController: UITableViewController{
     
     // 1. Creem Un itemArray
     
-    var itemArray = ["Find Mike","Buy Eggos","Destroy Demogorgon"]
+    var itemArray = [Item]()
     
-    // 10. Cream un obiect nou
+    // 21. creem cale spre mapa cu documente
     
-    let defaults = UserDefaults.standard
-
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Item.plist")
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
-     // 13 gasim si intoarcem datele inapoi dun pLIstul ToDoListArray
+        // 21. creem cale spre mapa cu documente
         
-        if let items = defaults.array(forKey: "ToDoListArray") as? [String] {
-            itemArray = items
-        }
-       
+        let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Item.plist")
+        print(dataFilePath)
+        
+        loadItems()
+        
     }
     
     //MARK: - Tablewiew Datasource Methods
@@ -43,24 +44,30 @@ class ToDoListViewController: UITableViewController{
         
         // cream o celula
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
-        cell.textLabel?.text = itemArray[indexPath.row]
+        
+        // 19. cream o constanata pentru a simplifica codul
+        let item = itemArray[indexPath.row]
+        
+        cell.textLabel?.text = item.title
+        
+        //20. cream operatorul ternar
+        // value = condition ? valueIfTrue : valueIFFalse
+        
+        cell.accessoryType = item.done ? .checkmark : .none
         
         return cell
     }
-
+    
     //MARK: - TableView Delegate methods
     // 4. functie c/r de selectarea celulelor
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        print(itemArray[indexPath.row])
+        //        print(itemArray[indexPath.row])
         
-        // 6. conditional ce raspunde de aparitia si disparitia checkmarkului
+        // 17.setam ca checkmarkul sa fie diferit de cel ce este
         
-        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark{
-            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-        }else{
-            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-        }
+        itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
+        saveItem()
         
         
         // 5 functie ce raspunde de deselctare celulelor
@@ -81,16 +88,14 @@ class ToDoListViewController: UITableViewController{
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             // ce se va intimpla du pa ce utilizatorul va apasa butonul add item dun alerta
             
-            self.itemArray.append(textField.text!)
+            // 16. cream un nou obiect de clasa Item
             
-        // 12. salvam itemArray in user defaults
+            let newItem = Item()
+            newItem.title = textField.text!
+            self.itemArray.append(newItem)
             
-            self.defaults.set(self.itemArray, forKey: "ToDoListArray")
+            self.saveItem()
             
-        // 11. metoda c/r de reincarcarea datelor in tableView
-      
-            self.tableView.reloadData()
-        
         }
         // 9. creem un cimp de text pentru alerta creata mai sus, si luam variabila creata la punctul 10 pentru ai da valoarea textului din alertTextFielf
         
@@ -98,12 +103,40 @@ class ToDoListViewController: UITableViewController{
             alertTextField.placeholder = "Create new item"
             textField = alertTextField
         }
-        
-        
         alert.addAction(action)
         present(alert, animated: true, completion: nil)
         
     }
     
+    //MARK: - Model Manipulation Methods
+    
+    func saveItem(){
+        let encoder = PropertyListEncoder()
+        do {
+            let data = try encoder.encode(itemArray)
+            try data.write(to:dataFilePath!)
+        } catch {
+            print("Error enconding item array, \(error)")
+            
+        }
+        
+        // 11. metoda c/r de reincarcarea datelor in tableView
+        
+        self.tableView.reloadData()
+        
+    }
+    
+    func loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!){
+            let decoder = PropertyListDecoder()
+            do {
+                itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+                print("Error decoding itemArray, \(error)")
+            }
+        }
+        
+    }
+
 }
 
