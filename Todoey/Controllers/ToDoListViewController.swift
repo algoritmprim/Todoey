@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import CoreData
 
 class ToDoListViewController: UITableViewController{
     
@@ -14,19 +15,25 @@ class ToDoListViewController: UITableViewController{
     
     var itemArray = [Item]()
     
+    var selectedCategory : Category? {
+        didSet {
+            loadItems()
+        }
+    }
+    
     // 21. creem cale spre mapa cu documente
     
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Item.plist")
+    
+    
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         // 21. creem cale spre mapa cu documente
         
-        let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Item.plist")
-        print(dataFilePath)
+        print (FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         
-        loadItems()
         
     }
     
@@ -59,12 +66,12 @@ class ToDoListViewController: UITableViewController{
     }
     
     //MARK: - TableView Delegate methods
+    
     // 4. functie c/r de selectarea celulelor
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         //        print(itemArray[indexPath.row])
-        
-        // 17.setam ca checkmarkul sa fie diferit de cel ce este
-        
+//        context.delete(itemArray[indexPath.row])
+//        itemArray.remove(at: indexPath.row)
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
         saveItem()
@@ -75,6 +82,7 @@ class ToDoListViewController: UITableViewController{
     }
     
     //MARk: - Add new items
+    
     // 7. Creem butonul de audaugare- addButtonpresed
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         
@@ -88,10 +96,10 @@ class ToDoListViewController: UITableViewController{
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             // ce se va intimpla du pa ce utilizatorul va apasa butonul add item dun alerta
             
-            // 16. cream un nou obiect de clasa Item
-            
-            let newItem = Item()
+            let newItem = Item(context: self.context)
             newItem.title = textField.text!
+            newItem.done = false
+            newItem.parentCategory = self.selectedCategory
             self.itemArray.append(newItem)
             
             self.saveItem()
@@ -111,32 +119,66 @@ class ToDoListViewController: UITableViewController{
     //MARK: - Model Manipulation Methods
     
     func saveItem(){
-        let encoder = PropertyListEncoder()
+        
         do {
-            let data = try encoder.encode(itemArray)
-            try data.write(to:dataFilePath!)
+            try context.save()
         } catch {
-            print("Error enconding item array, \(error)")
-            
+            print("Eroor saving context, \(error)")
         }
         
-        // 11. metoda c/r de reincarcarea datelor in tableView
+        
         
         self.tableView.reloadData()
         
     }
     
-    func loadItems() {
-        if let data = try? Data(contentsOf: dataFilePath!){
-            let decoder = PropertyListDecoder()
-            do {
-                itemArray = try decoder.decode([Item].self, from: data)
-            } catch {
-                print("Error decoding itemArray, \(error)")
-            }
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate : NSPredicate? = nil) {
+        
+        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+        
+        if let aditionalPredicate = predicate {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, aditionalPredicate])
+        } else {
+            request.predicate = categoryPredicate
+        }
+        
+        
+ 
+        do{
+            itemArray = try context.fetch(request)
+        }catch{
+            print("Error fetching data from the context \(error)")
+            
         }
         
     }
+    
+   
+    
+}
 
+//MARK: - Search bar methods
+extension ToDoListViewController: UISearchBarDelegate {
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        
+        let predicate  = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+       
+        
+        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+        
+        loadItems(with: request, predicate: predicate)
+        
+    }
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            loadItems()
+            
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
+        }
+    }
 }
 
